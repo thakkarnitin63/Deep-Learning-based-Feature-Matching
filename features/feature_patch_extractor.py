@@ -5,7 +5,7 @@ import os
 
 
 class FeaturePatchExtractor:
-    def __init__(self, feature_map_directory, patch_size=8):
+    def __init__(self, feature_map_directory, patch_size=16):
         """
         Initializes the patch extractor.
 
@@ -41,18 +41,14 @@ class FeaturePatchExtractor:
         x, y = int(keypoint.pt[0]), int(keypoint.pt[1])
         start_x = max(x - self.half_patch, 0)
         start_y = max(y - self.half_patch, 0)
-        end_x = start_x + self.patch_size
-        end_y = start_y + self.patch_size
+        end_x = min(
+            start_x + self.patch_size, feature_map.shape[1]
+        )  # Ensure within bounds
+        end_y = min(
+            start_y + self.patch_size, feature_map.shape[2]
+        )  # Ensure within bounds
 
-        # Handle boundary cases
-        if end_x > feature_map.shape[1]:
-            end_x = feature_map.shape[1]
-            start_x = end_x - self.patch_size
-        if end_y > feature_map.shape[0]:
-            end_y = feature_map.shape[0]
-            start_y = end_y - self.patch_size
-
-        return feature_map[start_y:end_y, start_x:end_x]
+        return feature_map[:, start_x:end_x, start_y:end_y]
 
     def get_patches_for_image(self, image_id, keypoints):
         """
@@ -63,5 +59,7 @@ class FeaturePatchExtractor:
         :return: List of patches centered on the keypoints.
         """
         feature_map = self.load_feature_map(image_id)
+        print("Feature map shape:", feature_map.shape)  # Print the shape for debugging
         patches = [self.extract_patch(feature_map, kp) for kp in keypoints]
+        del feature_map
         return patches

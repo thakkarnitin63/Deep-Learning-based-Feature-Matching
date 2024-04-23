@@ -4,7 +4,8 @@ import os
 import glob
 from tqdm import tqdm
 from matplotlib import pyplot as plt
-import mayavi.mlab as mlab
+
+# import mayavi.mlab as mlab
 
 
 class FeatureDescriptors:

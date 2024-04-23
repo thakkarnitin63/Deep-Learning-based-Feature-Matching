@@ -1,0 +1,6 @@
+*__pycache__/
+output/
+data/
+# Ignore Python bytecode directories and files
+__pycache__/
+*.pyc

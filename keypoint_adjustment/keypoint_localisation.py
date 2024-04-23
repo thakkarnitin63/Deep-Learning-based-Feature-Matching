@@ -4,6 +4,7 @@ import cv2
 from features.feature_patch_extractor import FeaturePatchExtractor
 from features.track_builder import TrackBuilder
 
+
 class TrackOptimizer:
     def __init__(self, patch_extractor: FeaturePatchExtractor, tracks_file_path):
         self.patch_extractor = patch_extractor
@@ -66,13 +67,13 @@ class TrackOptimizer:
                 total_diff += diff
 
             return total_diff
-        
+
         # Initial guess: no movement for all keypoints except the first one (fixed)
         num_keypoints = len(track)
         initial_params = np.zeros(2 * num_keypoints)
-        initial_params[1 : 2 * fixed_kp_index] = (
-            1  # Set initial movement for all except the fixed one
-        )
+        initial_params[
+            1 : 2 * fixed_kp_index
+        ] = 1  # Set initial movement for all except the fixed one
 
         # Define optimization constraints (limit movement to 8 pixels in each direction)
         bounds = [(-8, 8)] * num_keypoints
@@ -128,7 +129,7 @@ class TrackOptimizer:
             optimized_tracks.append(optimized_track)
 
         return optimized_tracks
-    
+
     def bilinear_interpolation(self, feature_map, subpixel_loc):
         """
         Performs bilinear interpolation on a 4-pixel feature vector given a subpixel location.
@@ -159,5 +160,3 @@ class TrackOptimizer:
         interpolated_feature = (1 - dy) * top + dy * bottom
 
         return interpolated_feature
-
-

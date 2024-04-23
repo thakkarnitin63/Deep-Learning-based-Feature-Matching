@@ -19,22 +19,28 @@ class TrackBuilder:
     #         self.graph.add_node(
     #             node_id, image=image_id, kp_index=idx, position=kp.pt, descriptor=desc
     #         )
-    
-    def add_keypoints_and_descriptors(self, image_id, keypoints, descriptors, is_colmap_keypoints=False):
+
+    def add_keypoints_and_descriptors(
+        self, image_id, keypoints, descriptors, is_colmap_keypoints=False
+    ):
         """
         Adds keypoints and their descriptors to the graph.
         """
         for idx, (kp, desc) in enumerate(zip(keypoints, descriptors)):
             kp_index = idx
             if is_colmap_keypoints:
-                  # Extract the COLMAP keypoint index
+                # Extract the COLMAP keypoint index
                 kp_position = (kp[0], kp[1])  # Extract the COLMAP keypoint position
             else:
                 kp_position = kp.pt  # Use the pt attribute for OpenCV keypoints
-                
+
             node_id = (image_id, kp_index)
             self.graph.add_node(
-                node_id, image=image_id, kp_index=kp_index, position=kp_position, descriptor=desc
+                node_id,
+                image=image_id,
+                kp_index=kp_index,
+                position=kp_position,
+                descriptor=desc,
             )
 
     def add_matches(self, image_id1, image_id2, kp_pairs, descriptors1, descriptors2):

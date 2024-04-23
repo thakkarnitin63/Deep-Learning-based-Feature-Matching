@@ -9,15 +9,32 @@ class TrackBuilder:
         self.graph = nx.Graph()
         self.descriptor_type = descriptor_type
 
-    def add_keypoints_and_descriptors(self, image_id, keypoints, descriptors):
+    # def add_keypoints_and_descriptors(self, image_id, keypoints, descriptors):
+    #     """
+    #     Adds keypoints and their descriptors to the graph.
+    #     """
+    #     for idx, (kp, desc) in enumerate(zip(keypoints, descriptors)):
+    #         node_id = (image_id, idx)
+    #         # Adding kp_index explicitly
+    #         self.graph.add_node(
+    #             node_id, image=image_id, kp_index=idx, position=kp.pt, descriptor=desc
+    #         )
+    
+    def add_keypoints_and_descriptors(self, image_id, keypoints, descriptors, is_colmap_keypoints=False):
         """
         Adds keypoints and their descriptors to the graph.
         """
         for idx, (kp, desc) in enumerate(zip(keypoints, descriptors)):
-            node_id = (image_id, idx)
-            # Adding kp_index explicitly
+            kp_index = idx
+            if is_colmap_keypoints:
+                  # Extract the COLMAP keypoint index
+                kp_position = (kp[0], kp[1])  # Extract the COLMAP keypoint position
+            else:
+                kp_position = kp.pt  # Use the pt attribute for OpenCV keypoints
+                
+            node_id = (image_id, kp_index)
             self.graph.add_node(
-                node_id, image=image_id, kp_index=idx, position=kp.pt, descriptor=desc
+                node_id, image=image_id, kp_index=kp_index, position=kp_position, descriptor=desc
             )
 
     def add_matches(self, image_id1, image_id2, kp_pairs, descriptors1, descriptors2):
@@ -73,7 +90,6 @@ class TrackBuilder:
     #     tracks = [list(dict(track).values()) for track in unique_tracks]
     #     return tracks
 
-
     def extract_tracks(self):
         """
         Extracts tracks as connected components, ensuring no track has multiple keypoints from the same image.
@@ -85,7 +101,9 @@ class TrackBuilder:
         node_to_track = {node: {node[0]: node} for node in self.graph.nodes()}
 
         # Merge tracks based on the highest similarity of connecting edges
-        for u, v, data in sorted(self.graph.edges(data=True), key=lambda x: -x[2]['weight']):
+        for u, v, data in sorted(
+            self.graph.edges(data=True), key=lambda x: -x[2]["weight"]
+        ):
             if node_to_track[u] != node_to_track[v]:
                 if not (set(node_to_track[u].keys()) & set(node_to_track[v].keys())):
                     # Combine tracks
@@ -114,13 +132,18 @@ class TrackBuilder:
         :param filename: Name of the HDF5 file to save the tracks.
         """
         # Define the data type for HDF5 storage
-        dt = np.dtype([
-            ('image_id', h5py.string_dtype(encoding='utf-8')),
-            ('kp_index', np.int32),
-            ('position_x', np.float32),
-            ('position_y', np.float32),
-            ('descriptor', h5py.special_dtype(vlen=np.float32))  # Handling variable-length float data
-        ])
+        dt = np.dtype(
+            [
+                ("image_id", h5py.string_dtype(encoding="utf-8")),
+                ("kp_index", np.int32),
+                ("position_x", np.float32),
+                ("position_y", np.float32),
+                (
+                    "descriptor",
+                    h5py.special_dtype(vlen=np.float32),
+                ),  # Handling variable-length float data
+            ]
+        )
 
         with h5py.File(filename, "w") as f:
             for i, track in enumerate(tracks):
@@ -128,14 +151,20 @@ class TrackBuilder:
                 data = []
                 for node_id in track:
                     node_data = self.graph.nodes.get(node_id)
-                    if node_data and 'position' in node_data and 'descriptor' in node_data:
+                    if (
+                        node_data
+                        and "position" in node_data
+                        and "descriptor" in node_data
+                    ):
                         data.append(
                             (
-                                node_data['image'],
-                                node_data['kp_index'],
-                                node_data['position'][0],  # position_x
-                                node_data['position'][1],  # position_y
-                                np.array(node_data['descriptor'], dtype=np.float32)  # Ensure correct dtype
+                                node_data["image"],
+                                node_data["kp_index"],
+                                node_data["position"][0],  # position_x
+                                node_data["position"][1],  # position_y
+                                np.array(
+                                    node_data["descriptor"], dtype=np.float32
+                                ),  # Ensure correct dtype
                             )
                         )
                 if data:
@@ -144,7 +173,7 @@ class TrackBuilder:
         print(f"Tracks saved to {filename}")
 
     @classmethod
-    def load_tracks_from_hdf5(self,filename):
+    def load_tracks_from_hdf5(self, filename):
         tracks = []
         with h5py.File(filename, "r") as f:
             # Iterate over each track group in the HDF5 file
@@ -155,12 +184,19 @@ class TrackBuilder:
                 # Convert the dataset to a numpy array
                 keypoints = keypoints_dataset[:]
                 # Extract track information
-                track_info = [{
-                    "image_id": kp['image_id'].decode('utf-8'),  # Decode from bytes to string
-                    "kp_index": int(kp['kp_index']),
-                    "position": (float(kp['position_x']), float(kp['position_y'])),
-                    "descriptor": np.array(kp['descriptor'])  # Ensure descriptor is a numpy array
-                } for kp in keypoints]
+                track_info = [
+                    {
+                        "image_id": kp["image_id"].decode(
+                            "utf-8"
+                        ),  # Decode from bytes to string
+                        "kp_index": int(kp["kp_index"]),
+                        "position": (float(kp["position_x"]), float(kp["position_y"])),
+                        "descriptor": np.array(
+                            kp["descriptor"]
+                        ),  # Ensure descriptor is a numpy array
+                    }
+                    for kp in keypoints
+                ]
                 tracks.append(track_info)
         return tracks
 

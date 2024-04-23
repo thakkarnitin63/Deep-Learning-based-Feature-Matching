@@ -8,7 +8,7 @@ import os
 
 class FeatureMapExtractor:
     def __init__(
-        self, model_path="models/s2dnet_weights.pth", device="cpu", output_dir="output"
+        self, model_path="models/s2dnet_weights.pth", device=None, output_dir="output"
     ):
         self.device = (
             device

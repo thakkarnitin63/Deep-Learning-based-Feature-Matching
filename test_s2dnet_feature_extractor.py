@@ -33,7 +33,7 @@ if __name__ == "__main__":
     extractor = FeatureMapExtractor()
     dataset_path = get_dataset_path("dataset/Compressed_buddha")
 
-    # extractor.process_directory(directory=dataset_path, batch_size=1)
+    extractor.process_directory(directory=dataset_path, batch_size=1)
     output_dir = extractor.output_dir
     assert os.path.exists(output_dir), "Output directory was not created."
 
